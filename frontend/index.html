@@ -559,7 +559,13 @@ nav { flex: 1; padding: 16px 0; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
 </style>
-<script src="config.js"></script>
+<script>
+// Auto-detect environment — empty string = same domain (Railway/production)
+// Override by setting window.API_BASE before this script if needed
+if (typeof window.API_BASE === 'undefined') {
+  window.API_BASE = '';
+}
+</script>
 </head>
 <body>
 
