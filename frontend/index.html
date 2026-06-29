@@ -929,8 +929,8 @@ if (typeof window.API_BASE === 'undefined') {
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// API base is set by config.js — swap that file for local vs production
-const API = (window.API_BASE || 'http://localhost:8000') + '/api/v1';
+// API_BASE: empty string = same domain (Railway), 'http://localhost:8000' = local
+const API = (window.API_BASE !== undefined && window.API_BASE !== null ? window.API_BASE : 'http://localhost:8000') + '/api/v1';
 
 // ── UTILS ──────────────────────────────────────────────────────────
 async function apiFetch(path, opts = {}) {
