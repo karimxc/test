@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FX Bureau — Operations Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0D0F14;
+  --surface:   #141720;
+  --surface2:  #191D2B;
+  --border:    #1E2333;
+  --border2:   #252C3F;
+  --gold:      #C8A96E;
+  --gold-dim:  #7A6340;
+  --text:      #E8EAF0;
+  --text-2:    #8B92A8;
+  --text-3:    #4A5168;
+  --green:     #2DD4A0;
+  --green-dim: #0D3D2E;
+  --red:       #F0614A;
+  --red-dim:   #3D1A14;
+  --blue:      #5B8DEF;
+  --mono:      'DM Mono', monospace;
+  --sans:      'Inter', sans-serif;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; overflow: hidden; }
+
+/* ── TICKER ─────────────────────────────────────────────── */
+.ticker-wrap {
+  height: 34px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+.ticker-label {
+  flex-shrink: 0;
+  padding: 0 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--gold);
+  border-right: 1px solid var(--border);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+  background: var(--surface);
+}
+.ticker-track {
+  display: flex;
+  gap: 0;
+  animation: ticker-scroll 28s linear infinite;
+  white-space: nowrap;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 28px;
+  font-family: var(--mono);
+  font-size: 11px;
+  border-right: 1px solid var(--border);
+  height: 34px;
+  color: var(--text-2);
+}
+.ticker-item .pair { color: var(--text); font-weight: 500; letter-spacing: .05em; }
+.ticker-item .rate { color: var(--gold); }
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.shell {
+  display: flex;
+  height: calc(100vh - 34px);
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 16px;
+}
+.sidebar-logo {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .mark {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .2em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.sidebar-logo .name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+  letter-spacing: -.01em;
+}
+nav { flex: 1; padding: 16px 0; }
+.nav-section-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .18em;
+  color: var(--text-3);
+  padding: 12px 20px 6px;
+  text-transform: uppercase;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 400;
+  transition: color .15s, background .15s;
+  border-left: 2px solid transparent;
+  position: relative;
+}
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--gold); border-left-color: var(--gold); background: rgba(200,169,110,.06); }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .7; }
+.nav-item.active svg { opacity: 1; }
+.sidebar-footer {
+  padding: 16px 20px 0;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── MAIN ─────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.main::-webkit-scrollbar { width: 5px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── PAGE HEADER ─────────────────────────────────────── */
+.page-header {
+  padding: 28px 36px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+.page-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 4px;
+  letter-spacing: .04em;
+}
+.page-actions { display: flex; gap: 8px; }
+
+/* ── PANELS ─────────────────────────────────────────── */
+.page-content { padding: 28px 36px; flex: 1; }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.panel-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  color: var(--text-2);
+  text-transform: uppercase;
+}
+.panel-body { padding: 20px; }
+
+/* ── STAT GRID ───────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.stat-cell {
+  padding: 22px 24px;
+  border-right: 1px solid var(--border);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .16em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+.stat-value.gold { color: var(--gold); }
+.stat-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+/* ── TABLE ────────────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface2); }
+.data-table td.primary { color: var(--text); font-weight: 500; }
+.data-table td.mono-num { color: var(--gold); }
+.data-table td.green { color: var(--green); }
+.data-table td.red { color: var(--red); }
+
+/* ── BADGES ──────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+.badge.active   { background: var(--green-dim); color: var(--green); }
+.badge.inactive { background: var(--red-dim);   color: var(--red); }
+.badge.buy      { background: rgba(45,212,160,.1); color: var(--green); }
+.badge.sell     { background: rgba(240,97,74,.1);  color: var(--red); }
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  letter-spacing: .01em;
+}
+.btn-primary { background: var(--gold); color: #0D0F14; }
+.btn-primary:hover { background: #D4B87A; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border2);
+}
+.btn-ghost:hover { border-color: var(--gold-dim); color: var(--text); }
+.btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,97,74,.2); }
+.btn-danger:hover { background: rgba(240,97,74,.2); }
+.btn-sm { padding: 5px 11px; font-size: 11px; }
+
+/* ── FORMS ────────────────────────────────────────────── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-row.cols-1 { grid-template-columns: 1fr; }
+.field label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color .15s;
+  appearance: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold-dim); }
+.field textarea { min-height: 80px; resize: vertical; }
+.field select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+/* ── BALANCE BAR ─────────────────────────────────────── */
+.balance-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.balance-row:last-child { border-bottom: none; }
+.balance-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  width: 48px;
+  flex-shrink: 0;
+}
+.balance-name { font-size: 12px; color: var(--text-3); flex: 1; }
+.balance-bar-wrap { width: 160px; height: 3px; background: var(--border2); flex-shrink: 0; }
+.balance-bar { height: 100%; background: var(--gold); transition: width .5s ease; }
+.balance-amount {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--gold);
+  text-align: right;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast-wrap {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 12px 18px;
+  border-left: 3px solid var(--green);
+  background: var(--surface);
+  color: var(--text);
+  animation: toast-in .2s ease;
+  max-width: 320px;
+}
+.toast.error { border-left-color: var(--red); }
+@keyframes toast-in { from { opacity:0; transform: translateX(12px); } to { opacity:1; transform: none; } }
+
+/* ── AI CHAT ─────────────────────────────────────────── */
+.chat-log {
+  min-height: 200px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.chat-log::-webkit-scrollbar { width: 4px; }
+.chat-log::-webkit-scrollbar-thumb { background: var(--border2); }
+.chat-msg { display: flex; gap: 12px; align-items: flex-start; }
+.chat-msg.user { flex-direction: row-reverse; }
+.chat-avatar {
+  width: 28px; height: 28px;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  letter-spacing: .06em;
+}
+.chat-msg.user .chat-avatar { background: var(--gold); color: #0D0F14; }
+.chat-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+  max-width: 80%;
+}
+.chat-msg.user .chat-bubble { background: rgba(200,169,110,.07); border-color: var(--gold-dim); color: var(--text); }
+.chat-input-row { display: flex; gap: 0; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px; }
+.chat-input-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-right: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 14px;
+  outline: none;
+}
+.chat-input-row input:focus { border-color: var(--gold-dim); }
+.chat-input-row button {
+  background: var(--gold);
+  color: #0D0F14;
+  border: none;
+  padding: 0 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  font-weight: 500;
+}
+.chat-input-row button:hover { background: #D4B87A; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(13,15,20,.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  width: 480px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+.modal-close {
+  background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 20px; line-height: 1; padding: 2px;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.empty {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+/* ── LOADING ─────────────────────────────────────────── */
+.loading {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOGGLE ──────────────────────────────────────────── */
+.toggle {
+  width: 36px; height: 20px;
+  background: var(--border2);
+  border-radius: 0;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--green); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 14px; height: 14px;
+  background: var(--bg);
+  transition: left .2s;
+}
+.toggle.on::after { left: 19px; }
+
+/* ── PAGE VISIBILITY ──────────────────────────────────── */
+.page { display: none; flex-direction: column; flex: 1; }
+.page.active { display: flex; }
+
+/* ── TWO-COL ─────────────────────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+/* ── DIVIDER ─────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-label">FX RATES</div>
+  <div style="overflow:hidden;flex:1">
+    <div class="ticker-track" id="tickerTrack">
+      <span class="ticker-item"><span class="pair">USD/TND</span><span class="rate">—</span></span>
+      <span class="ticker-item"><span class="pair">EUR/TND</span><span class="rate">—</span></span>
+      <span class="ticker-item"><span class="pair">GBP/TND</span><span class="rate">—</span></span>
+      <span class="ticker-item"><span class="pair">EUR/USD</span><span class="rate">—</span></span>
+      <span class="ticker-item"><span class="pair">MAD/TND</span><span class="rate">—</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="mark">FX Bureau</div>
+      <div class="name">Operations Terminal</div>
+    </div>
+    <nav>
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-section-label">Management</div>
+      <div class="nav-item" data-page="currencies">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+        Currencies
+      </div>
+      <div class="nav-item" data-page="stock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="0"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        Stock Inventory
+      </div>
+      <div class="nav-item" data-page="rates">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Exchange Rates
+      </div>
+      <div class="nav-section-label">Operations</div>
+      <div class="nav-item" data-page="transactions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Transactions
+      </div>
+      <div class="nav-item" data-page="ai">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI Assistant
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div><span class="status-dot"></span>API Connected</div>
+      <div style="margin-top:6px;color:var(--text-3)" id='apiHost'>loading...</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle" id="dashDate">—</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↺ Refresh</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="stat-grid" id="statGrid">
+          <div class="stat-cell"><div class="stat-label">Total Currencies</div><div class="stat-value" id="s-total">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Active Currencies</div><div class="stat-value gold" id="s-active">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Transactions Today</div><div class="stat-value" id="s-txcount">—</div></div>
+          <div class="stat-cell"><div class="stat-label">Volume Today</div><div class="stat-value gold" id="s-vol">—</div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Current Balances</div></div>
+            <div class="panel-body" id="dashBalances"><div class="empty">Loading...</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Recent Transactions</div></div>
+            <div style="overflow-x:auto">
+              <table class="data-table" id="dashTxTable">
+                <thead><tr><th>Pair</th><th>Type</th><th>Amount</th><th>Time</th></tr></thead>
+                <tbody id="dashTxBody"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CURRENCIES PAGE -->
+    <div class="page" id="page-currencies">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Currencies</div>
+          <div class="page-subtitle">Manage supported currency codes and status</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary btn-sm" onclick="openAddCurrencyModal()">+ Add Currency</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">All Currencies</div></div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="currencyTable">
+              <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="currencyBody"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOCK PAGE -->
+    <div class="page" id="page-stock">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Stock Inventory</div>
+          <div class="page-subtitle">Physical currency balances and adjustments</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadStock()">↺ Refresh</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Current Balances</div></div>
+            <div class="panel-body" id="stockBalances"><div class="empty">Loading...</div></div>
+          </div>
+          <div>
+            <div class="panel" style="margin-bottom:20px">
+              <div class="panel-head"><div class="panel-title">Deposit</div></div>
+              <div class="panel-body">
+                <div class="form-row cols-1"><div class="field"><label>Currency</label><select id="dep-code"></select></div></div>
+                <div class="form-row cols-1"><div class="field"><label>Amount</label><input type="number" id="dep-amount" placeholder="0.00" min="0.01" step="0.01" /></div></div>
+                <button class="btn btn-primary" style="width:100%" onclick="doDeposit()">Deposit Funds</button>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">Withdraw</div></div>
+              <div class="panel-body">
+                <div class="form-row cols-1"><div class="field"><label>Currency</label><select id="wd-code"></select></div></div>
+                <div class="form-row cols-1"><div class="field"><label>Amount</label><input type="number" id="wd-amount" placeholder="0.00" min="0.01" step="0.01" /></div></div>
+                <button class="btn btn-danger" style="width:100%" onclick="doWithdraw()">Withdraw Funds</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RATES PAGE -->
+    <div class="page" id="page-rates">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Exchange Rates</div>
+          <div class="page-subtitle">Currency pair rates used in all transactions</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-rate')">+ Set Rate</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Active Rates</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="rateSourceTag" style="font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em"></span>
+              <button class="btn btn-ghost btn-sm" id="syncBtn" onclick="doSyncRates()">⟳ Sync Live Rates</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="rateTable">
+              <thead><tr><th>From</th><th>To</th><th>Rate</th><th>Updated</th><th>Actions</th></tr></thead>
+              <tbody id="rateBody"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS PAGE -->
+    <div class="page" id="page-transactions">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Transactions</div>
+          <div class="page-subtitle">Exchange history and new operations</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-tx')">+ New Transaction</button>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Transaction History</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadTransactions()">↺ Refresh</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="txTable">
+              <thead><tr><th>ID</th><th>From</th><th>To</th><th>Amount</th><th>Converted</th><th>Rate</th><th>Type</th><th>Time</th></tr></thead>
+              <tbody id="txBody"><tr><td colspan="8" class="empty">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI PAGE -->
+    <div class="page" id="page-ai">
+      <div class="page-header">
+        <div>
+          <div class="page-title">AI Assistant</div>
+          <div class="page-subtitle">Natural language queries — read-only operational insights</div>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Query Terminal</div></div>
+          <div class="panel-body">
+            <div class="chat-log" id="chatLog">
+              <div class="chat-msg">
+                <div class="chat-avatar">AI</div>
+                <div class="chat-bubble">Ready. Ask about balances, today's activity, transaction summaries, or inventory status.</div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" id="chatInput" placeholder='e.g. "Summarize today\'s activity"' onkeydown="if(event.key==='Enter')sendAI()" />
+              <button onclick="sendAI()">SEND</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Suggested Queries</div></div>
+          <div class="panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="setAI('Show today\'s activity')">Show today's activity</button>
+            <button class="btn btn-ghost btn-sm" onclick="setAI('Summarize inventory changes')">Summarize inventory changes</button>
+            <button class="btn btn-ghost btn-sm" onclick="setAI('Which currency has the highest balance?')">Highest balance currency</button>
+            <button class="btn btn-ghost btn-sm" onclick="setAI('How many transactions were made today?')">Today's transaction count</button>
+            <button class="btn btn-ghost btn-sm" onclick="setAI('What is the total volume exchanged today?')">Total volume today</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODALS -->
+<!-- Add Currency -->
+<div class="modal-bg" id="modal-currency">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">Add Currency</div>
+      <button class="modal-close" onclick="closeModal('modal-currency')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:14px">
+        <label>Search Currency</label>
+        <input id="c-search" placeholder="Type name or code — e.g. Euro, GBP, Franc..." oninput="filterCurrencyList()" autocomplete="off" />
+      </div>
+      <div style="border:1px solid var(--border);max-height:280px;overflow-y:auto" id="c-list-wrap">
+        <div id="c-list"></div>
+      </div>
+      <div id="c-selected-preview" style="display:none;margin-top:14px;padding:10px 14px;background:var(--bg);border:1px solid var(--gold-dim);font-family:var(--mono);font-size:12px;color:var(--gold)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-currency')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAddCurrency()" id="c-add-btn" disabled style="opacity:.4;cursor:not-allowed">Add Currency</button>
+    </div>
+  </div>
+</div>
+
+<!-- Set Rate -->
+<div class="modal-bg" id="modal-rate">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Set Exchange Rate</div>
+      <button class="modal-close" onclick="closeModal('modal-rate')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field"><label>From Currency</label><select id="r-from"></select></div>
+        <div class="field"><label>To Currency</label><select id="r-to"></select></div>
+      </div>
+      <div class="form-row cols-1"><div class="field"><label>Rate</label><input id="r-rate" type="number" placeholder="1.0000" min="0.000001" step="any" /></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-rate')">Cancel</button>
+      <button class="btn btn-primary" onclick="doSetRate()">Save Rate</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Transaction -->
+<div class="modal-bg" id="modal-tx">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Transaction</div>
+      <button class="modal-close" onclick="closeModal('modal-tx')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="field"><label>From Currency</label><select id="tx-from"></select></div>
+        <div class="field"><label>To Currency</label><select id="tx-to"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Amount</label><input id="tx-amount" type="number" placeholder="0.00" min="0.01" step="any" /></div>
+        <div class="field"><label>Operation Type</label>
+          <select id="tx-type">
+            <option value="buy">BUY</option>
+            <option value="sell">SELL</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-tx')">Cancel</button>
+      <button class="btn btn-primary" onclick="doTransaction()">Execute</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Rate -->
+<div class="modal-bg" id="modal-rate-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Update Rate</div>
+      <button class="modal-close" onclick="closeModal('modal-rate-edit')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row cols-1">
+        <div class="field"><label>Pair</label><input id="re-pair" readonly style="color:var(--text-3)" /></div>
+      </div>
+      <div class="form-row cols-1">
+        <div class="field"><label>New Rate</label><input id="re-rate" type="number" step="any" min="0.000001" /></div>
+      </div>
+      <input type="hidden" id="re-from" /><input type="hidden" id="re-to" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-rate-edit')">Cancel</button>
+      <button class="btn btn-primary" onclick="doUpdateRate()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// API base is set by config.js — swap that file for local vs production
+const API = (window.API_BASE || 'http://localhost:8000') + '/api/v1';
+
+// ── UTILS ──────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Request failed');
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function toast(msg, type = 'ok') {
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── NAVIGATION ─────────────────────────────────────────────────────
+const pages = { dashboard: loadDashboard, currencies: loadCurrencies, stock: loadStock, rates: loadRates, transactions: loadTransactions, ai: () => {} };
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    const p = el.dataset.page;
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+    document.getElementById('page-' + p).classList.add('active');
+    if (pages[p]) pages[p]();
+  });
+});
+
+// ── TICKER ─────────────────────────────────────────────────────────
+async function loadTicker() {
+  try {
+    const rates = await apiFetch('/rates/');
+    const track = document.getElementById('tickerTrack');
+    if (!rates.length) return;
+    const items = rates.map(r =>
+      `<span class="ticker-item"><span class="pair">${r.from_currency_code}/${r.to_currency_code}</span><span class="rate">${Number(r.rate).toFixed(4)}</span></span>`
+    ).join('');
+    // duplicate for seamless scroll
+    track.innerHTML = items + items;
+  } catch (_) {}
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  try {
+    const d = await apiFetch('/dashboard/');
+    document.getElementById('s-total').textContent   = d.total_currencies;
+    document.getElementById('s-active').textContent  = d.active_currencies;
+    document.getElementById('s-txcount').textContent = d.total_transactions_today;
+    document.getElementById('s-vol').textContent     = fmt(d.total_volume_today);
+
+    // balances
+    const maxBal = Math.max(...d.balances.map(b => Number(b.balance)), 1);
+    document.getElementById('dashBalances').innerHTML = d.balances.length
+      ? d.balances.map(b => `
+        <div class="balance-row">
+          <div class="balance-code">${b.currency_code}</div>
+          <div class="balance-name">&nbsp;</div>
+          <div class="balance-bar-wrap"><div class="balance-bar" style="width:${Math.round(Number(b.balance)/maxBal*100)}%"></div></div>
+          <div class="balance-amount">${fmt(b.balance)}</div>
+        </div>`).join('')
+      : '<div class="empty">No stock data</div>';
+
+    // recent tx
+    const tbody = document.getElementById('dashTxBody');
+    tbody.innerHTML = d.recent_transactions.length
+      ? d.recent_transactions.map(tx => `
+        <tr>
+          <td class="primary">${tx.from_currency_code} → ${tx.to_currency_code}</td>
+          <td><span class="badge ${tx.operation_type}">${tx.operation_type.toUpperCase()}</span></td>
+          <td class="mono-num">${fmt(tx.amount)}</td>
+          <td>${fmtTime(tx.created_at)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No transactions today</td></tr>';
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── CURRENCIES ─────────────────────────────────────────────────────
+async function loadCurrencies() {
+  try {
+    const currencies = await apiFetch('/currencies/');
+    const tbody = document.getElementById('currencyBody');
+    tbody.innerHTML = currencies.length
+      ? currencies.map(c => `
+        <tr>
+          <td class="primary">${c.code}</td>
+          <td>${c.name}</td>
+          <td><span class="badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="toggleCurrency('${c.code}', ${c.is_active}, '${c.name}')">${c.is_active ? 'Deactivate' : 'Activate'}</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:6px" onclick="deleteCurrency('${c.code}')">Delete</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No currencies yet</td></tr>';
+
+    // populate selects
+    populateCurrencySelects(currencies);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function populateCurrencySelects(currencies) {
+  const selects = ['dep-code', 'wd-code', 'r-from', 'r-to', 'tx-from', 'tx-to'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = el.value;
+    el.innerHTML = currencies.map(c => `<option value="${c.code}">${c.code} — ${c.name}</option>`).join('');
+    if (val) el.value = val;
+  });
+}
+
+async function loadCurrencySelects() {
+  try {
+    const currencies = await apiFetch('/currencies/');
+    populateCurrencySelects(currencies);
+  } catch (_) {}
+}
+
+// ── WORLD CURRENCY CATALOGUE ──────────────────────────────────────────────────
+const ALL_CURRENCIES = [
+  { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪' },
+  { code: 'AFN', name: 'Afghan Afghani', flag: '🇦🇫' },
+  { code: 'ALL', name: 'Albanian Lek', flag: '🇦🇱' },
+  { code: 'AMD', name: 'Armenian Dram', flag: '🇦🇲' },
+  { code: 'ANG', name: 'Netherlands Antillean Guilder', flag: '🇨🇼' },
+  { code: 'AOA', name: 'Angolan Kwanza', flag: '🇦🇴' },
+  { code: 'ARS', name: 'Argentine Peso', flag: '🇦🇷' },
+  { code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺' },
+  { code: 'AWG', name: 'Aruban Florin', flag: '🇦🇼' },
+  { code: 'AZN', name: 'Azerbaijani Manat', flag: '🇦🇿' },
+  { code: 'BAM', name: 'Bosnia-Herzegovina Convertible Mark', flag: '🇧🇦' },
+  { code: 'BBD', name: 'Barbadian Dollar', flag: '🇧🇧' },
+  { code: 'BDT', name: 'Bangladeshi Taka', flag: '🇧🇩' },
+  { code: 'BGN', name: 'Bulgarian Lev', flag: '🇧🇬' },
+  { code: 'BHD', name: 'Bahraini Dinar', flag: '🇧🇭' },
+  { code: 'BIF', name: 'Burundian Franc', flag: '🇧🇮' },
+  { code: 'BMD', name: 'Bermudan Dollar', flag: '🇧🇲' },
+  { code: 'BND', name: 'Brunei Dollar', flag: '🇧🇳' },
+  { code: 'BOB', name: 'Bolivian Boliviano', flag: '🇧🇴' },
+  { code: 'BRL', name: 'Brazilian Real', flag: '🇧🇷' },
+  { code: 'BSD', name: 'Bahamian Dollar', flag: '🇧🇸' },
+  { code: 'BTN', name: 'Bhutanese Ngultrum', flag: '🇧🇹' },
+  { code: 'BWP', name: 'Botswanan Pula', flag: '🇧🇼' },
+  { code: 'BYN', name: 'Belarusian Ruble', flag: '🇧🇾' },
+  { code: 'BZD', name: 'Belize Dollar', flag: '🇧🇿' },
+  { code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦' },
+  { code: 'CDF', name: 'Congolese Franc', flag: '🇨🇩' },
+  { code: 'CHF', name: 'Swiss Franc', flag: '🇨🇭' },
+  { code: 'CLP', name: 'Chilean Peso', flag: '🇨🇱' },
+  { code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳' },
+  { code: 'COP', name: 'Colombian Peso', flag: '🇨🇴' },
+  { code: 'CRC', name: 'Costa Rican Colón', flag: '🇨🇷' },
+  { code: 'CUP', name: 'Cuban Peso', flag: '🇨🇺' },
+  { code: 'CVE', name: 'Cape Verdean Escudo', flag: '🇨🇻' },
+  { code: 'CZK', name: 'Czech Koruna', flag: '🇨🇿' },
+  { code: 'DJF', name: 'Djiboutian Franc', flag: '🇩🇯' },
+  { code: 'DKK', name: 'Danish Krone', flag: '🇩🇰' },
+  { code: 'DOP', name: 'Dominican Peso', flag: '🇩🇴' },
+  { code: 'DZD', name: 'Algerian Dinar', flag: '🇩🇿' },
+  { code: 'EGP', name: 'Egyptian Pound', flag: '🇪🇬' },
+  { code: 'ERN', name: 'Eritrean Nakfa', flag: '🇪🇷' },
+  { code: 'ETB', name: 'Ethiopian Birr', flag: '🇪🇹' },
+  { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
+  { code: 'FJD', name: 'Fijian Dollar', flag: '🇫🇯' },
+  { code: 'FKP', name: 'Falkland Islands Pound', flag: '🇫🇰' },
+  { code: 'GBP', name: 'British Pound Sterling', flag: '🇬🇧' },
+  { code: 'GEL', name: 'Georgian Lari', flag: '🇬🇪' },
+  { code: 'GHS', name: 'Ghanaian Cedi', flag: '🇬🇭' },
+  { code: 'GIP', name: 'Gibraltar Pound', flag: '🇬🇮' },
+  { code: 'GMD', name: 'Gambian Dalasi', flag: '🇬🇲' },
+  { code: 'GNF', name: 'Guinean Franc', flag: '🇬🇳' },
+  { code: 'GTQ', name: 'Guatemalan Quetzal', flag: '🇬🇹' },
+  { code: 'GYD', name: 'Guyanaese Dollar', flag: '🇬🇾' },
+  { code: 'HKD', name: 'Hong Kong Dollar', flag: '🇭🇰' },
+  { code: 'HNL', name: 'Honduran Lempira', flag: '🇭🇳' },
+  { code: 'HRK', name: 'Croatian Kuna', flag: '🇭🇷' },
+  { code: 'HTG', name: 'Haitian Gourde', flag: '🇭🇹' },
+  { code: 'HUF', name: 'Hungarian Forint', flag: '🇭🇺' },
+  { code: 'IDR', name: 'Indonesian Rupiah', flag: '🇮🇩' },
+  { code: 'ILS', name: 'Israeli New Shekel', flag: '🇮🇱' },
+  { code: 'INR', name: 'Indian Rupee', flag: '🇮🇳' },
+  { code: 'IQD', name: 'Iraqi Dinar', flag: '🇮🇶' },
+  { code: 'IRR', name: 'Iranian Rial', flag: '🇮🇷' },
+  { code: 'ISK', name: 'Icelandic Króna', flag: '🇮🇸' },
+  { code: 'JMD', name: 'Jamaican Dollar', flag: '🇯🇲' },
+  { code: 'JOD', name: 'Jordanian Dinar', flag: '🇯🇴' },
+  { code: 'JPY', name: 'Japanese Yen', flag: '🇯🇵' },
+  { code: 'KES', name: 'Kenyan Shilling', flag: '🇰🇪' },
+  { code: 'KGS', name: 'Kyrgystani Som', flag: '🇰🇬' },
+  { code: 'KHR', name: 'Cambodian Riel', flag: '🇰🇭' },
+  { code: 'KMF', name: 'Comorian Franc', flag: '🇰🇲' },
+  { code: 'KPW', name: 'North Korean Won', flag: '🇰🇵' },
+  { code: 'KRW', name: 'South Korean Won', flag: '🇰🇷' },
+  { code: 'KWD', name: 'Kuwaiti Dinar', flag: '🇰🇼' },
+  { code: 'KYD', name: 'Cayman Islands Dollar', flag: '🇰🇾' },
+  { code: 'KZT', name: 'Kazakhstani Tenge', flag: '🇰🇿' },
+  { code: 'LAK', name: 'Laotian Kip', flag: '🇱🇦' },
+  { code: 'LBP', name: 'Lebanese Pound', flag: '🇱🇧' },
+  { code: 'LKR', name: 'Sri Lankan Rupee', flag: '🇱🇰' },
+  { code: 'LRD', name: 'Liberian Dollar', flag: '🇱🇷' },
+  { code: 'LSL', name: 'Lesotho Loti', flag: '🇱🇸' },
+  { code: 'LYD', name: 'Libyan Dinar', flag: '🇱🇾' },
+  { code: 'MAD', name: 'Moroccan Dirham', flag: '🇲🇦' },
+  { code: 'MDL', name: 'Moldovan Leu', flag: '🇲🇩' },
+  { code: 'MGA', name: 'Malagasy Ariary', flag: '🇲🇬' },
+  { code: 'MKD', name: 'Macedonian Denar', flag: '🇲🇰' },
+  { code: 'MMK', name: 'Myanmar Kyat', flag: '🇲🇲' },
+  { code: 'MNT', name: 'Mongolian Tugrik', flag: '🇲🇳' },
+  { code: 'MOP', name: 'Macanese Pataca', flag: '🇲🇴' },
+  { code: 'MRU', name: 'Mauritanian Ouguiya', flag: '🇲🇷' },
+  { code: 'MUR', name: 'Mauritian Rupee', flag: '🇲🇺' },
+  { code: 'MVR', name: 'Maldivian Rufiyaa', flag: '🇲🇻' },
+  { code: 'MWK', name: 'Malawian Kwacha', flag: '🇲🇼' },
+  { code: 'MXN', name: 'Mexican Peso', flag: '🇲🇽' },
+  { code: 'MYR', name: 'Malaysian Ringgit', flag: '🇲🇾' },
+  { code: 'MZN', name: 'Mozambican Metical', flag: '🇲🇿' },
+  { code: 'NAD', name: 'Namibian Dollar', flag: '🇳🇦' },
+  { code: 'NGN', name: 'Nigerian Naira', flag: '🇳🇬' },
+  { code: 'NIO', name: 'Nicaraguan Córdoba', flag: '🇳🇮' },
+  { code: 'NOK', name: 'Norwegian Krone', flag: '🇳🇴' },
+  { code: 'NPR', name: 'Nepalese Rupee', flag: '🇳🇵' },
+  { code: 'NZD', name: 'New Zealand Dollar', flag: '🇳🇿' },
+  { code: 'OMR', name: 'Omani Rial', flag: '🇴🇲' },
+  { code: 'PAB', name: 'Panamanian Balboa', flag: '🇵🇦' },
+  { code: 'PEN', name: 'Peruvian Sol', flag: '🇵🇪' },
+  { code: 'PGK', name: 'Papua New Guinean Kina', flag: '🇵🇬' },
+  { code: 'PHP', name: 'Philippine Peso', flag: '🇵🇭' },
+  { code: 'PKR', name: 'Pakistani Rupee', flag: '🇵🇰' },
+  { code: 'PLN', name: 'Polish Zloty', flag: '🇵🇱' },
+  { code: 'PYG', name: 'Paraguayan Guarani', flag: '🇵🇾' },
+  { code: 'QAR', name: 'Qatari Rial', flag: '🇶🇦' },
+  { code: 'RON', name: 'Romanian Leu', flag: '🇷🇴' },
+  { code: 'RSD', name: 'Serbian Dinar', flag: '🇷🇸' },
+  { code: 'RUB', name: 'Russian Ruble', flag: '🇷🇺' },
+  { code: 'RWF', name: 'Rwandan Franc', flag: '🇷🇼' },
+  { code: 'SAR', name: 'Saudi Riyal', flag: '🇸🇦' },
+  { code: 'SBD', name: 'Solomon Islands Dollar', flag: '🇸🇧' },
+  { code: 'SCR', name: 'Seychellois Rupee', flag: '🇸🇨' },
+  { code: 'SDG', name: 'Sudanese Pound', flag: '🇸🇩' },
+  { code: 'SEK', name: 'Swedish Krona', flag: '🇸🇪' },
+  { code: 'SGD', name: 'Singapore Dollar', flag: '🇸🇬' },
+  { code: 'SHP', name: 'Saint Helena Pound', flag: '🇸🇭' },
+  { code: 'SLL', name: 'Sierra Leonean Leone', flag: '🇸🇱' },
+  { code: 'SOS', name: 'Somali Shilling', flag: '🇸🇴' },
+  { code: 'SRD', name: 'Surinamese Dollar', flag: '🇸🇷' },
+  { code: 'STN', name: 'São Tomé and Príncipe Dobra', flag: '🇸🇹' },
+  { code: 'SVC', name: 'Salvadoran Colón', flag: '🇸🇻' },
+  { code: 'SYP', name: 'Syrian Pound', flag: '🇸🇾' },
+  { code: 'SZL', name: 'Swazi Lilangeni', flag: '🇸🇿' },
+  { code: 'THB', name: 'Thai Baht', flag: '🇹🇭' },
+  { code: 'TJS', name: 'Tajikistani Somoni', flag: '🇹🇯' },
+  { code: 'TMT', name: 'Turkmenistani Manat', flag: '🇹🇲' },
+  { code: 'TND', name: 'Tunisian Dinar', flag: '🇹🇳' },
+  { code: 'TOP', name: 'Tongan Paʻanga', flag: '🇹🇴' },
+  { code: 'TRY', name: 'Turkish Lira', flag: '🇹🇷' },
+  { code: 'TTD', name: 'Trinidad and Tobago Dollar', flag: '🇹🇹' },
+  { code: 'TWD', name: 'New Taiwan Dollar', flag: '🇹🇼' },
+  { code: 'TZS', name: 'Tanzanian Shilling', flag: '🇹🇿' },
+  { code: 'UAH', name: 'Ukrainian Hryvnia', flag: '🇺🇦' },
+  { code: 'UGX', name: 'Ugandan Shilling', flag: '🇺🇬' },
+  { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
+  { code: 'UYU', name: 'Uruguayan Peso', flag: '🇺🇾' },
+  { code: 'UZS', name: 'Uzbekistan Som', flag: '🇺🇿' },
+  { code: 'VES', name: 'Venezuelan Bolívar', flag: '🇻🇪' },
+  { code: 'VND', name: 'Vietnamese Dong', flag: '🇻🇳' },
+  { code: 'VUV', name: 'Vanuatu Vatu', flag: '🇻🇺' },
+  { code: 'WST', name: 'Samoan Tala', flag: '🇼🇸' },
+  { code: 'XAF', name: 'Central African CFA Franc', flag: '🌍' },
+  { code: 'XCD', name: 'East Caribbean Dollar', flag: '🌎' },
+  { code: 'XOF', name: 'West African CFA Franc', flag: '🌍' },
+  { code: 'XPF', name: 'CFP Franc', flag: '🌊' },
+  { code: 'YER', name: 'Yemeni Rial', flag: '🇾🇪' },
+  { code: 'ZAR', name: 'South African Rand', flag: '🇿🇦' },
+  { code: 'ZMW', name: 'Zambian Kwacha', flag: '🇿🇲' },
+  { code: 'ZWL', name: 'Zimbabwean Dollar', flag: '🇿🇼' },
+];
+
+let selectedCurrency = null;
+
+function openAddCurrencyModal() {
+  selectedCurrency = null;
+  document.getElementById('c-search').value = '';
+  document.getElementById('c-selected-preview').style.display = 'none';
+  document.getElementById('c-add-btn').disabled = true;
+  document.getElementById('c-add-btn').style.opacity = '.4';
+  document.getElementById('c-add-btn').style.cursor = 'not-allowed';
+  renderCurrencyList(ALL_CURRENCIES);
+  openModal('modal-currency');
+  setTimeout(() => document.getElementById('c-search').focus(), 80);
+}
+
+function renderCurrencyList(list) {
+  const el = document.getElementById('c-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty" style="padding:24px">No currencies match your search</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => `
+    <div class="currency-pick-row" onclick="selectCurrency('${c.code}', '${c.name.replace(/'/g,"\'")}', '${c.flag}')"
+         id="pick-${c.code}"
+         style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s">
+      <span style="font-size:18px;line-height:1;width:24px;flex-shrink:0">${c.flag}</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500;width:44px;flex-shrink:0">${c.code}</span>
+      <span style="font-size:12px;color:var(--text-2);flex:1">${c.name}</span>
+    </div>
+  `).join('');
+}
+
+function filterCurrencyList() {
+  const q = document.getElementById('c-search').value.trim().toLowerCase();
+  const filtered = q
+    ? ALL_CURRENCIES.filter(c => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
+    : ALL_CURRENCIES;
+  renderCurrencyList(filtered);
+
+  // If the typed code is an exact match, auto-select it
+  if (q.length >= 2) {
+    const exact = ALL_CURRENCIES.find(c => c.code.toLowerCase() === q);
+    if (exact) selectCurrency(exact.code, exact.name, exact.flag);
+  }
+}
+
+function selectCurrency(code, name, flag) {
+  selectedCurrency = { code, name };
+
+  // Highlight selected row
+  document.querySelectorAll('.currency-pick-row').forEach(r => r.style.background = '');
+  const row = document.getElementById('pick-' + code);
+  if (row) row.style.background = 'rgba(200,169,110,.08)';
+
+  // Show preview
+  const preview = document.getElementById('c-selected-preview');
+  preview.style.display = 'block';
+  preview.innerHTML = `${flag} &nbsp;<strong>${code}</strong> &nbsp;—&nbsp; ${name} &nbsp;<span style="color:var(--text-3)">will be added with zero balance</span>`;
+
+  // Enable button
+  const btn = document.getElementById('c-add-btn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+}
+
+async function doAddCurrency() {
+  if (!selectedCurrency) return toast('Select a currency first', 'error');
+  const { code, name } = selectedCurrency;
+  try {
+    await apiFetch('/currencies/', { method: 'POST', body: JSON.stringify({ code, name }) });
+    toast(`${code} — ${name} added`);
+    closeModal('modal-currency');
+    selectedCurrency = null;
+    loadCurrencies();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function toggleCurrency(code, isActive, name) {
+  try {
+    await apiFetch(`/currencies/${code}`, { method: 'PATCH', body: JSON.stringify({ is_active: !isActive }) });
+    toast(`${code} ${isActive ? 'deactivated' : 'activated'}`);
+    loadCurrencies();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteCurrency(code) {
+  if (!confirm(`Delete ${code}? This cannot be undone.`)) return;
+  try {
+    await apiFetch(`/currencies/${code}`, { method: 'DELETE' });
+    toast(`${code} deleted`);
+    loadCurrencies();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── STOCK ──────────────────────────────────────────────────────────
+async function loadStock() {
+  try {
+    const stock = await apiFetch('/stock/');
+    const max = Math.max(...stock.map(s => Number(s.balance)), 1);
+    document.getElementById('stockBalances').innerHTML = stock.length
+      ? stock.map(s => `
+        <div class="balance-row">
+          <div class="balance-code">${s.currency_code}</div>
+          <div class="balance-name">&nbsp;</div>
+          <div class="balance-bar-wrap"><div class="balance-bar" style="width:${Math.round(Number(s.balance)/max*100)}%"></div></div>
+          <div class="balance-amount">${fmt(s.balance)}</div>
+        </div>`).join('')
+      : '<div class="empty">No stock</div>';
+    loadCurrencySelects();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function doDeposit() {
+  const code   = document.getElementById('dep-code').value;
+  const amount = document.getElementById('dep-amount').value;
+  if (!amount || Number(amount) <= 0) return toast('Enter a valid amount', 'error');
+  try {
+    await apiFetch(`/stock/${code}/deposit`, { method: 'POST', body: JSON.stringify({ amount: Number(amount) }) });
+    toast(`Deposited ${fmt(amount)} ${code}`);
+    document.getElementById('dep-amount').value = '';
+    loadStock();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function doWithdraw() {
+  const code   = document.getElementById('wd-code').value;
+  const amount = document.getElementById('wd-amount').value;
+  if (!amount || Number(amount) <= 0) return toast('Enter a valid amount', 'error');
+  try {
+    await apiFetch(`/stock/${code}/withdraw`, { method: 'POST', body: JSON.stringify({ amount: Number(amount) }) });
+    toast(`Withdrew ${fmt(amount)} ${code}`);
+    document.getElementById('wd-amount').value = '';
+    loadStock();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── RATES ──────────────────────────────────────────────────────────
+async function loadRates() {
+  try {
+    const rates = await apiFetch('/rates/');
+    const tbody = document.getElementById('rateBody');
+    tbody.innerHTML = rates.length
+      ? rates.map(r => `
+        <tr>
+          <td class="primary">${r.from_currency_code}</td>
+          <td class="primary">${r.to_currency_code}</td>
+          <td class="mono-num">${Number(r.rate).toFixed(6)}</td>
+          <td>${r.updated_at ? new Date(r.updated_at).toLocaleString('en-GB', {hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}) : '—'}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openEditRate('${r.from_currency_code}','${r.to_currency_code}',${r.rate})">Edit</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:6px" onclick="deleteRate('${r.from_currency_code}','${r.to_currency_code}')">Delete</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" class="empty">No rates configured</td></tr>';
+    loadCurrencySelects();
+    loadTicker();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function doSetRate() {
+  const from = document.getElementById('r-from').value;
+  const to   = document.getElementById('r-to').value;
+  const rate = document.getElementById('r-rate').value;
+  if (!rate || Number(rate) <= 0) return toast('Enter a valid rate', 'error');
+  if (from === to) return toast('From and To must differ', 'error');
+  try {
+    await apiFetch('/rates/', { method: 'POST', body: JSON.stringify({ from_currency_code: from, to_currency_code: to, rate: Number(rate) }) });
+    toast(`Rate ${from}/${to} saved`);
+    closeModal('modal-rate');
+    document.getElementById('r-rate').value = '';
+    loadRates();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function openEditRate(from, to, rate) {
+  document.getElementById('re-pair').value = `${from} → ${to}`;
+  document.getElementById('re-from').value = from;
+  document.getElementById('re-to').value   = to;
+  document.getElementById('re-rate').value = rate;
+  openModal('modal-rate-edit');
+}
+
+async function doUpdateRate() {
+  const from = document.getElementById('re-from').value;
+  const to   = document.getElementById('re-to').value;
+  const rate = document.getElementById('re-rate').value;
+  if (!rate || Number(rate) <= 0) return toast('Enter a valid rate', 'error');
+  try {
+    await apiFetch(`/rates/${from}/${to}`, { method: 'PATCH', body: JSON.stringify({ rate: Number(rate) }) });
+    toast(`Rate ${from}/${to} updated`);
+    closeModal('modal-rate-edit');
+    loadRates();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteRate(from, to) {
+  if (!confirm(`Delete rate ${from}/${to}?`)) return;
+  try {
+    await apiFetch(`/rates/${from}/${to}`, { method: 'DELETE' });
+    toast(`Rate ${from}/${to} deleted`);
+    loadRates();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── TRANSACTIONS ───────────────────────────────────────────────────
+async function loadTransactions() {
+  try {
+    const txs = await apiFetch('/transactions/?limit=50');
+    const tbody = document.getElementById('txBody');
+    tbody.innerHTML = txs.length
+      ? txs.map(tx => `
+        <tr>
+          <td style="color:var(--text-3);font-size:10px">${tx.id.slice(0,8)}…</td>
+          <td class="primary">${tx.from_currency_code}</td>
+          <td class="primary">${tx.to_currency_code}</td>
+          <td class="mono-num">${fmt(tx.amount)}</td>
+          <td class="${tx.operation_type === 'buy' ? 'green' : 'red'}">${fmt(tx.converted_amount)}</td>
+          <td>${Number(tx.rate).toFixed(4)}</td>
+          <td><span class="badge ${tx.operation_type}">${tx.operation_type.toUpperCase()}</span></td>
+          <td>${new Date(tx.created_at).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" class="empty">No transactions yet</td></tr>';
+    loadCurrencySelects();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function doTransaction() {
+  const from   = document.getElementById('tx-from').value;
+  const to     = document.getElementById('tx-to').value;
+  const amount = document.getElementById('tx-amount').value;
+  const type   = document.getElementById('tx-type').value;
+  if (!amount || Number(amount) <= 0) return toast('Enter a valid amount', 'error');
+  if (from === to) return toast('From and To must differ', 'error');
+  try {
+    await apiFetch('/transactions/', { method: 'POST', body: JSON.stringify({ from_currency_code: from, to_currency_code: to, amount: Number(amount), operation_type: type }) });
+    toast(`Transaction executed: ${type.toUpperCase()} ${amount} ${from} → ${to}`);
+    closeModal('modal-tx');
+    document.getElementById('tx-amount').value = '';
+    loadTransactions();
+    loadTicker();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── AI ─────────────────────────────────────────────────────────────
+async function sendAI() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+
+  const log = document.getElementById('chatLog');
+  log.innerHTML += `<div class="chat-msg user"><div class="chat-avatar">YOU</div><div class="chat-bubble">${q}</div></div>`;
+
+  const loading = document.createElement('div');
+  loading.className = 'chat-msg';
+  loading.innerHTML = `<div class="chat-avatar">AI</div><div class="chat-bubble"><span class="loading"></span></div>`;
+  log.appendChild(loading);
+  log.scrollTop = log.scrollHeight;
+
+  try {
+    const res = await apiFetch('/ai/query', { method: 'POST', body: JSON.stringify({ question: q }) });
+    loading.querySelector('.chat-bubble').textContent = res.answer;
+  } catch (e) {
+    loading.querySelector('.chat-bubble').textContent = 'Error: ' + e.message;
+    loading.querySelector('.chat-bubble').style.color = 'var(--red)';
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function setAI(q) {
+  document.getElementById('chatInput').value = q;
+  document.getElementById('chatInput').focus();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────
+loadDashboard();
+loadTicker();
+setInterval(loadTicker, 30000);
+</script>
+</body>
+</html>
