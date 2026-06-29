@@ -23,6 +23,7 @@ from app.core.rate_scheduler import (
 logging.basicConfig(level=logging.INFO)
 
 CORS_HEADERS = {"Access-Control-Allow-Origin": "*"}
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 
 
 @asynccontextmanager
@@ -36,11 +37,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     lifespan=lifespan,
-    description=(
-        "Internal system for managing currency exchange operations. "
-        "Tracks inventory, records buy/sell transactions, manages exchange rates, "
-        "and provides AI-assisted operational insights."
-    ),
+    description="Internal system for managing currency exchange operations.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -58,12 +55,8 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Unhandled exception on {request.method} {request.url}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"},
-        headers=CORS_HEADERS,
-    )
+    logging.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": str(exc)}, headers=CORS_HEADERS)
 
 @app.exception_handler(CurrencyNotFoundError)
 async def currency_not_found_handler(request: Request, exc: CurrencyNotFoundError):
@@ -93,17 +86,11 @@ app.include_router(api_router, prefix="/api/v1")
 def health():
     return {"status": "healthy"}
 
-# ── Frontend static files ──────────────────────────────────────────────────────
-# Serve frontend/ directory — index.html at root, config.js alongside it
-FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+# ── Frontend files served individually at root level ──────────────────────────
+@app.get("/", tags=["Frontend"])
+def serve_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
-if os.path.exists(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
-
-    @app.get("/", tags=["Frontend"])
-    def serve_frontend():
-        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
-else:
-    @app.get("/", tags=["Health"])
-    def root():
-        return {"status": "ok", "app": settings.APP_NAME}
+@app.get("/config.js", tags=["Frontend"])
+def serve_config():
+    return FileResponse(os.path.join(FRONTEND_DIR, "config.js"))
