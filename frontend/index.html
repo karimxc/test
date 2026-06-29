@@ -1259,7 +1259,7 @@ function renderCurrencyList(list) {
     <div class="currency-pick-row" onclick="selectCurrency('${c.code}', '${c.name.replace(/'/g,"\'")}', '${c.flag}')"
          id="pick-${c.code}"
          style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s">
-      <span style="font-size:18px;line-height:1;width:24px;flex-shrink:0">${c.flag}</span>
+      <span style="font-family:var(--mono);font-size:9px;font-weight:600;color:#0D0F14;background:var(--gold);padding:2px 5px;letter-spacing:.04em;flex-shrink:0;min-width:32px;text-align:center">${c.code.slice(0,2)}</span>
       <span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500;width:44px;flex-shrink:0">${c.code}</span>
       <span style="font-size:12px;color:var(--text-2);flex:1">${c.name}</span>
     </div>
@@ -1291,7 +1291,7 @@ function selectCurrency(code, name, flag) {
   // Show preview
   const preview = document.getElementById('c-selected-preview');
   preview.style.display = 'block';
-  preview.innerHTML = `${flag} &nbsp;<strong>${code}</strong> &nbsp;—&nbsp; ${name} &nbsp;<span style="color:var(--text-3)">will be added with zero balance</span>`;
+  preview.innerHTML = `<strong>${code}</strong> &nbsp;—&nbsp; ${name} &nbsp;<span style="color:var(--text-3)">will be added with zero balance</span>`;
 
   // Enable button
   const btn = document.getElementById('c-add-btn');
