@@ -1,5 +1,6 @@
 """
 Seed script — populates the database with initial currencies, stock balances, and exchange rates.
+Safe to run multiple times — skips existing data.
 Run with: python seed.py
 """
 import sys
@@ -8,6 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.db.session import SessionLocal
+from app.models.currency import Currency
 from app.services.currency_service import CurrencyService
 from app.services.stock_service import StockService
 from app.services.exchange_rate_service import ExchangeRateService
@@ -33,22 +35,30 @@ INITIAL_STOCK = {
 }
 
 RATES = [
-    ("USD", "TND", "3.1200"),
-    ("TND", "USD", "0.3205"),
-    ("EUR", "TND", "3.3800"),
-    ("TND", "EUR", "0.2959"),
-    ("USD", "EUR", "0.9210"),
-    ("EUR", "USD", "1.0856"),
+    ("USD", "TND", "2.9100"),
+    ("TND", "USD", "0.3436"),
+    ("EUR", "TND", "3.3700"),
+    ("TND", "EUR", "0.2967"),
+    ("USD", "EUR", "0.8710"),
+    ("EUR", "USD", "1.1480"),
     ("GBP", "TND", "3.9500"),
     ("TND", "GBP", "0.2532"),
-    ("USD", "MAD", "10.0200"),
-    ("MAD", "USD", "0.0998"),
+    ("USD", "MAD", "9.3100"),
+    ("MAD", "USD", "0.1074"),
+    ("EUR", "GBP", "0.8450"),
+    ("GBP", "EUR", "1.1834"),
 ]
 
 
 def seed():
     db = SessionLocal()
     try:
+        # Check if already seeded
+        existing = db.query(Currency).count()
+        if existing > 0:
+            print(f"Database already has {existing} currencies — skipping seed.")
+            return
+
         currency_svc = CurrencyService(db)
         stock_svc = StockService(db)
         rate_svc = ExchangeRateService(db)
@@ -65,8 +75,10 @@ def seed():
         for code, amount in INITIAL_STOCK.items():
             try:
                 stock_svc.deposit(code, amount)
+                db.commit()
                 print(f"  {code}: +{amount}")
             except Exception as e:
+                db.rollback()
                 print(f"  Skipped {code}: {e}")
 
         print("\nSeeding exchange rates...")
