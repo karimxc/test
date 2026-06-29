@@ -1077,6 +1077,36 @@ async function loadCurrencySelects() {
 }
 
 // ── WORLD CURRENCY CATALOGUE ──────────────────────────────────────────────────
+// Maps currency code to ISO 3166-1 alpha-2 country code for flag images
+const CURRENCY_COUNTRY = {
+  AED:'ae',AFN:'af',ALL:'al',AMD:'am',ANG:'cw',AOA:'ao',ARS:'ar',AUD:'au',
+  AWG:'aw',AZN:'az',BAM:'ba',BBD:'bb',BDT:'bd',BGN:'bg',BHD:'bh',BIF:'bi',
+  BMD:'bm',BND:'bn',BOB:'bo',BRL:'br',BSD:'bs',BTN:'bt',BWP:'bw',BYN:'by',
+  BZD:'bz',CAD:'ca',CDF:'cd',CHF:'ch',CLP:'cl',CNY:'cn',COP:'co',CRC:'cr',
+  CUP:'cu',CVE:'cv',CZK:'cz',DJF:'dj',DKK:'dk',DOP:'do',DZD:'dz',EGP:'eg',
+  ERN:'er',ETB:'et',EUR:'eu',FJD:'fj',FKP:'fk',GBP:'gb',GEL:'ge',GHS:'gh',
+  GIP:'gi',GMD:'gm',GNF:'gn',GTQ:'gt',GYD:'gy',HKD:'hk',HNL:'hn',HRK:'hr',
+  HTG:'ht',HUF:'hu',IDR:'id',ILS:'il',INR:'in',IQD:'iq',IRR:'ir',ISK:'is',
+  JMD:'jm',JOD:'jo',JPY:'jp',KES:'ke',KGS:'kg',KHR:'kh',KMF:'km',KPW:'kp',
+  KRW:'kr',KWD:'kw',KYD:'ky',KZT:'kz',LAK:'la',LBP:'lb',LKR:'lk',LRD:'lr',
+  LSL:'ls',LYD:'ly',MAD:'ma',MDL:'md',MGA:'mg',MKD:'mk',MMK:'mm',MNT:'mn',
+  MOP:'mo',MRU:'mr',MUR:'mu',MVR:'mv',MWK:'mw',MXN:'mx',MYR:'my',MZN:'mz',
+  NAD:'na',NGN:'ng',NIO:'ni',NOK:'no',NPR:'np',NZD:'nz',OMR:'om',PAB:'pa',
+  PEN:'pe',PGK:'pg',PHP:'ph',PKR:'pk',PLN:'pl',PYG:'py',QAR:'qa',RON:'ro',
+  RSD:'rs',RUB:'ru',RWF:'rw',SAR:'sa',SBD:'sb',SCR:'sc',SDG:'sd',SEK:'se',
+  SGD:'sg',SHP:'sh',SLL:'sl',SOS:'so',SRD:'sr',STN:'st',SVC:'sv',SYP:'sy',
+  SZL:'sz',THB:'th',TJS:'tj',TMT:'tm',TND:'tn',TOP:'to',TRY:'tr',TTD:'tt',
+  TWD:'tw',TZS:'tz',UAH:'ua',UGX:'ug',USD:'us',UYU:'uy',UZS:'uz',VES:'ve',
+  VND:'vn',VUV:'vu',WST:'ws',XAF:'cm',XCD:'ag',XOF:'sn',XPF:'pf',YER:'ye',
+  ZAR:'za',ZMW:'zm',ZWL:'zw'
+};
+
+function getFlagUrl(code) {
+  const country = CURRENCY_COUNTRY[code];
+  if (!country) return null;
+  return \`https://flagcdn.com/20x15/\${country}.png\`;
+}
+
 const ALL_CURRENCIES = [
   { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪' },
   { code: 'AFN', name: 'Afghan Afghani', flag: '🇦🇫' },
@@ -1255,15 +1285,20 @@ function renderCurrencyList(list) {
     el.innerHTML = '<div class="empty" style="padding:24px">No currencies match your search</div>';
     return;
   }
-  el.innerHTML = list.map(c => `
+  el.innerHTML = list.map(c => {
+    const flagUrl = getFlagUrl(c.code);
+    const flagHtml = flagUrl
+      ? `<img src="${flagUrl}" width="20" height="15" style="flex-shrink:0;object-fit:cover;border:1px solid var(--border)" onerror="this.style.display='none'">`
+      : `<span style="width:20px;height:15px;flex-shrink:0;background:var(--border);display:inline-block"></span>`;
+    return `
     <div class="currency-pick-row" onclick="selectCurrency('${c.code}', '${c.name.replace(/'/g,"\'")}', '${c.flag}')"
          id="pick-${c.code}"
          style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s">
-      <span style="font-family:var(--mono);font-size:9px;font-weight:600;color:#0D0F14;background:var(--gold);padding:2px 5px;letter-spacing:.04em;flex-shrink:0;min-width:32px;text-align:center">${c.code.slice(0,2)}</span>
+      ${flagHtml}
       <span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500;width:44px;flex-shrink:0">${c.code}</span>
       <span style="font-size:12px;color:var(--text-2);flex:1">${c.name}</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function filterCurrencyList() {
