@@ -1104,7 +1104,7 @@ const CURRENCY_COUNTRY = {
 function getFlagUrl(code) {
   const country = CURRENCY_COUNTRY[code];
   if (!country) return null;
-  return \`https://flagcdn.com/20x15/\${country}.png\`;
+  return `https://flagcdn.com/20x15/${country}.png`;
 }
 
 const ALL_CURRENCIES = [
